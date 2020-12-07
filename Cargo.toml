@@ -1,0 +1,13 @@
+[package]
+name = "wvr-data"
+version = "0.1.0"
+authors = ["gurke.club <contact@gurke.club>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+anyhow = "1.0"
+ron = "0.6"
+directories-next = "1.0"
+clap = "*"
