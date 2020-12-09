@@ -40,6 +40,14 @@ pub struct Buffer {
     pub data: Option<Vec<u8>>,
 }
 
+pub trait InputProvider: Send {
+    fn provides(&self) -> Vec<String>;
+    fn get(&mut self, uniform_name: &str, invalidate: bool) -> Option<DataHolder>;
+
+    fn set_beat(&mut self, _bpm: f64, _sync: bool) {}
+    fn set_time(&mut self, _time: f64, _sync: bool) {}
+}
+
 pub fn get_data_path() -> PathBuf {
     if let Some(proj_dirs) = ProjectDirs::from("club", "gurke", "wvr") {
         Path::new(&proj_dirs.data_local_dir()).to_path_buf()
