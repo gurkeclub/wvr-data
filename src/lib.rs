@@ -40,7 +40,7 @@ pub struct Buffer {
     pub data: Option<Vec<u8>>,
 }
 
-pub trait InputProvider: Send {
+pub trait InputProvider {
     fn provides(&self) -> Vec<String>;
     fn get(&mut self, uniform_name: &str, invalidate: bool) -> Option<DataHolder>;
 
