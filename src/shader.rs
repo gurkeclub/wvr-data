@@ -1,7 +1,8 @@
-use std::fs::File;
+use std::io::Error;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::SystemTime;
+use std::{fs::File, io::ErrorKind};
 
 use anyhow::{Context, Result};
 
@@ -61,8 +62,15 @@ impl FileShader {
             .context("Failed to retrieve shader file last modification time")?;
 
         let mut text = String::new();
-        file.read_to_string(&mut text)
-            .context("Failed to retrieve shader content")?;
+        file.read_to_string(&mut text).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!(
+                    "Failed to retrieve shader content: {:?} ({:?})",
+                    &file_path, &e
+                ),
+            )
+        })?;
 
         let text_shader = TextShader::new(text);
 
