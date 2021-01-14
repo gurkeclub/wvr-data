@@ -54,7 +54,12 @@ pub struct FileShader {
 
 impl FileShader {
     pub fn new(file_path: PathBuf, live_reload: bool) -> Result<Self> {
-        let mut file = File::open(&file_path).context(format!("Failed to open shader file"))?;
+        let mut file = File::open(&file_path).map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("Failed to open shader file: {:?} ({:?})", &file_path, &e),
+            )
+        })?;
         let timestamp = file
             .metadata()
             .context("Failed to retrieve shader file metadata")?
