@@ -122,13 +122,6 @@ pub struct FilterConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ProjectConfig {
-    #[serde(default)]
-    pub libs_path: PathBuf,
-    #[serde(default)]
-    pub filters_path: PathBuf,
-    #[serde(default)]
-    pub path: PathBuf,
-
     pub view: ViewConfig,
     pub server: ServerConfig,
     pub inputs: HashMap<String, InputConfig>,
