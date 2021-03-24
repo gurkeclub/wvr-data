@@ -6,7 +6,6 @@ use crate::DataHolder;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ViewConfig {
-    pub bpm: f32,
     pub width: i64,
     pub height: i64,
     pub fullscreen: bool,
@@ -122,10 +121,10 @@ pub struct FilterConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ProjectConfig {
+    pub bpm: f32,
     pub view: ViewConfig,
     pub server: ServerConfig,
     pub inputs: HashMap<String, InputConfig>,
-    pub filters: HashMap<String, FilterConfig>,
     pub render_chain: Vec<RenderStageConfig>,
     pub final_stage: RenderStageConfig,
 }
