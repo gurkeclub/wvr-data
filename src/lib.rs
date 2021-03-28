@@ -46,6 +46,7 @@ pub trait InputProvider {
 
     fn set_beat(&mut self, _bpm: f64, _sync: bool) {}
     fn set_time(&mut self, _time: f64, _sync: bool) {}
+    fn stop(&mut self) {}
 }
 
 pub fn get_data_path() -> PathBuf {
