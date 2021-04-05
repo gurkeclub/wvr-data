@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use crate::config::server_config::ServerConfig;
 use crate::DataHolder;
+use crate::DataRange;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ViewConfig {
@@ -109,6 +110,7 @@ pub struct RenderStageConfig {
     #[serde(default)]
     pub precision: BufferPrecision,
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FilterConfig {
     #[serde(default)]
@@ -116,7 +118,7 @@ pub struct FilterConfig {
     pub inputs: Vec<String>,
     pub vertex_shader: Vec<String>,
     pub fragment_shader: Vec<String>,
-    pub variables: HashMap<String, DataHolder>,
+    pub variables: HashMap<String, (DataHolder, DataRange)>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

@@ -9,6 +9,14 @@ use directories_next::ProjectDirs;
 pub mod config;
 pub mod shader;
 
+#[derive(Clone, Debug, Serialize, Deserialize, Copy, PartialEq)]
+pub enum DataRange {
+    IntRange(i64, i64, i64),
+    FloatRange(f64, f64, f64),
+    ColorRange,
+    None,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DataHolder {
     Float(f32),
