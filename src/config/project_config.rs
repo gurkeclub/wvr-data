@@ -112,9 +112,14 @@ pub struct RenderStageConfig {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum FilterMode {
+    Rectangle(f32, f32, f32, f32),
+    Particles(usize),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FilterConfig {
-    #[serde(default)]
-    pub path: Option<PathBuf>,
+    pub mode: FilterMode,
     pub inputs: Vec<String>,
     pub vertex_shader: Vec<String>,
     pub fragment_shader: Vec<String>,
