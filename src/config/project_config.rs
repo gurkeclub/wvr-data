@@ -105,6 +105,7 @@ pub enum SampledInput {
 pub struct RenderStageConfig {
     pub name: String,
     pub filter: String,
+    pub filter_mode_params: FilterMode,
     pub inputs: HashMap<String, SampledInput>,
     pub variables: HashMap<String, DataHolder>,
     #[serde(default)]
