@@ -49,35 +49,19 @@ pub enum InputConfig {
 
 impl InputConfig {
     pub fn is_video(&self) -> bool {
-        if let InputConfig::Video { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, InputConfig::Video { .. })
     }
 
     pub fn is_picture(&self) -> bool {
-        if let InputConfig::Picture { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, InputConfig::Picture { .. })
     }
 
     pub fn is_cam(&self) -> bool {
-        if let InputConfig::Cam { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, InputConfig::Cam { .. })
     }
 
     pub fn is_midi(&self) -> bool {
-        if let InputConfig::Midi { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, InputConfig::Midi { .. })
     }
 }
 
