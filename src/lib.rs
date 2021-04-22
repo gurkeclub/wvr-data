@@ -49,6 +49,7 @@ pub struct Buffer {
 }
 
 pub trait InputProvider {
+    fn set_name(&mut self, name: &str);
     fn provides(&self) -> Vec<String>;
     fn get(&mut self, uniform_name: &str, invalidate: bool) -> Option<DataHolder>;
 
