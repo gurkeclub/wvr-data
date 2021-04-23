@@ -40,6 +40,8 @@ pub enum DataHolder {
 
     ByteArray(Vec<u8>),
 
+    String(String),
+
     Texture(((u32, u32), Vec<u8>)),
 }
 
