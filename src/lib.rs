@@ -53,6 +53,7 @@ pub trait InputProvider {
     fn provides(&self) -> Vec<String>;
     fn get(&mut self, uniform_name: &str, invalidate: bool) -> Option<DataHolder>;
 
+    fn set_property(&mut self, property: &str, value: &DataHolder);
     fn set_beat(&mut self, _bpm: f64, _sync: bool) {}
     fn set_time(&mut self, _time: f64, _sync: bool) {}
     fn stop(&mut self) {}
