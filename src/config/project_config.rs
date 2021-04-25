@@ -20,7 +20,7 @@ pub struct ViewConfig {
 #[derive(Clone, Debug, Serialize, Deserialize, Copy, PartialEq)]
 pub enum Speed {
     Fps(f32),
-    Beats(f32),
+    Fpb(f32),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
