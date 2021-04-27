@@ -17,7 +17,93 @@ pub struct ViewConfig {
     pub screenshot: bool,
     pub locked_speed: bool,
 }
-#[derive(Clone, Debug, Serialize, Deserialize, Copy, PartialEq)]
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+pub enum LfoType {
+    Square,
+    Triangle,
+    Saw,
+    Sine,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+pub enum Automation {
+    Lfo(LfoType, f64, f64, f64, f64, bool),
+    None,
+}
+
+impl Automation {
+    pub fn is_none(&self) -> bool {
+        self == &Self::None
+    }
+    pub fn apply(&self, value: &DataHolder, beat: f64) -> Option<DataHolder> {
+        if self == &Self::None {
+            return None;
+        }
+        let offset = match self {
+            &Self::Lfo(lfo_type, numerator, denominator, phase, amplitude, signed) => {
+                let beat_cursor = (beat * numerator / denominator + phase).fract();
+
+                let offset = match lfo_type {
+                    LfoType::Square => {
+                        if beat_cursor >= 0.0 {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    }
+                    LfoType::Triangle => 1.0 - (beat_cursor * 2.0 - 1.0).abs(),
+                    LfoType::Saw => beat_cursor,
+                    LfoType::Sine => (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5,
+                };
+
+                amplitude * if signed { offset * 2.0 - 1.0 } else { offset }
+            }
+            _ => unreachable!(),
+        };
+
+        match value {
+            &DataHolder::Bool(bool_value) => Some(DataHolder::Bool(
+                (bool_value || offset > 0.5) && offset > 0.0,
+            )),
+            &DataHolder::Float(float_value) => Some(DataHolder::Float(float_value + offset as f32)),
+            &DataHolder::Float2(float2_value) => Some(DataHolder::Float2([
+                float2_value[0] + offset as f32,
+                float2_value[1] + offset as f32,
+            ])),
+            &DataHolder::Float3(float3_value) => Some(DataHolder::Float3([
+                float3_value[0] + offset as f32,
+                float3_value[1] + offset as f32,
+                float3_value[2] + offset as f32,
+            ])),
+            &DataHolder::Float4(float4_value) => Some(DataHolder::Float4([
+                float4_value[0] + offset as f32,
+                float4_value[1] + offset as f32,
+                float4_value[2] + offset as f32,
+                float4_value[3] + offset as f32,
+            ])),
+            &DataHolder::Int(int_value) => Some(DataHolder::Int(int_value + offset as i32)),
+            &DataHolder::Int2(int2_value) => Some(DataHolder::Int2([
+                int2_value[0] + offset as i32,
+                int2_value[1] + offset as i32,
+            ])),
+            &DataHolder::Int3(int3_value) => Some(DataHolder::Int3([
+                int3_value[0] + offset as i32,
+                int3_value[1] + offset as i32,
+                int3_value[2] + offset as i32,
+            ])),
+            &DataHolder::Int4(int4_value) => Some(DataHolder::Int4([
+                int4_value[0] + offset as i32,
+                int4_value[1] + offset as i32,
+                int4_value[2] + offset as i32,
+                int4_value[3] + offset as i32,
+            ])),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Speed {
     Fps(f32),
     Fpb(f32),
@@ -65,7 +151,7 @@ impl InputConfig {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum BufferPrecision {
     U8,
     F16,
@@ -91,12 +177,12 @@ pub struct RenderStageConfig {
     pub filter: String,
     pub filter_mode_params: FilterMode,
     pub inputs: HashMap<String, SampledInput>,
-    pub variables: HashMap<String, DataHolder>,
+    pub variables: HashMap<String, (DataHolder, Automation)>,
     #[serde(default)]
     pub precision: BufferPrecision,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum FilterMode {
     Rectangle(f32, f32, f32, f32),
     Particles(usize),
