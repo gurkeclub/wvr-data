@@ -40,13 +40,13 @@ impl Automation {
         if self == &Self::None {
             return None;
         }
-        let offset = match self {
-            &Self::Lfo(lfo_type, numerator, denominator, phase, amplitude, signed) => {
+        let offset = match *self {
+            Self::Lfo(lfo_type, numerator, denominator, phase, amplitude, signed) => {
                 let beat_cursor = (beat * numerator / denominator + phase).fract();
 
                 let offset = match lfo_type {
                     LfoType::Square => {
-                        if beat_cursor >= 0.0 {
+                        if beat_cursor >= 0.5 {
                             1.0
                         } else {
                             0.0
@@ -62,37 +62,37 @@ impl Automation {
             _ => unreachable!(),
         };
 
-        match value {
-            &DataHolder::Bool(bool_value) => Some(DataHolder::Bool(
+        match *value {
+            DataHolder::Bool(bool_value) => Some(DataHolder::Bool(
                 (bool_value || offset > 0.5) && offset > 0.0,
             )),
-            &DataHolder::Float(float_value) => Some(DataHolder::Float(float_value + offset as f32)),
-            &DataHolder::Float2(float2_value) => Some(DataHolder::Float2([
+            DataHolder::Float(float_value) => Some(DataHolder::Float(float_value + offset as f32)),
+            DataHolder::Float2(float2_value) => Some(DataHolder::Float2([
                 float2_value[0] + offset as f32,
                 float2_value[1] + offset as f32,
             ])),
-            &DataHolder::Float3(float3_value) => Some(DataHolder::Float3([
+            DataHolder::Float3(float3_value) => Some(DataHolder::Float3([
                 float3_value[0] + offset as f32,
                 float3_value[1] + offset as f32,
                 float3_value[2] + offset as f32,
             ])),
-            &DataHolder::Float4(float4_value) => Some(DataHolder::Float4([
+            DataHolder::Float4(float4_value) => Some(DataHolder::Float4([
                 float4_value[0] + offset as f32,
                 float4_value[1] + offset as f32,
                 float4_value[2] + offset as f32,
                 float4_value[3] + offset as f32,
             ])),
-            &DataHolder::Int(int_value) => Some(DataHolder::Int(int_value + offset as i32)),
-            &DataHolder::Int2(int2_value) => Some(DataHolder::Int2([
+            DataHolder::Int(int_value) => Some(DataHolder::Int(int_value + offset as i32)),
+            DataHolder::Int2(int2_value) => Some(DataHolder::Int2([
                 int2_value[0] + offset as i32,
                 int2_value[1] + offset as i32,
             ])),
-            &DataHolder::Int3(int3_value) => Some(DataHolder::Int3([
+            DataHolder::Int3(int3_value) => Some(DataHolder::Int3([
                 int3_value[0] + offset as i32,
                 int3_value[1] + offset as i32,
                 int3_value[2] + offset as i32,
             ])),
-            &DataHolder::Int4(int4_value) => Some(DataHolder::Int4([
+            DataHolder::Int4(int4_value) => Some(DataHolder::Int4([
                 int4_value[0] + offset as i32,
                 int4_value[1] + offset as i32,
                 int4_value[2] + offset as i32,
