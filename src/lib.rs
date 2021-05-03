@@ -45,6 +45,7 @@ pub enum DataHolder {
     String(String),
 
     Texture(((u32, u32), Vec<u8>)),
+    SrgbTexture(((u32, u32), Vec<u8>)),
 }
 
 pub struct Buffer {
