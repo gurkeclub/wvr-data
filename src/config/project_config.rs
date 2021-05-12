@@ -15,6 +15,7 @@ pub struct ViewConfig {
     pub vsync: bool,
     pub screenshot_path: PathBuf,
     pub screenshot: bool,
+    pub screenshot_frame_count: i64,
     pub locked_speed: bool,
 }
 
