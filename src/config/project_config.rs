@@ -20,16 +20,50 @@ pub struct ViewConfig {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
-pub enum LfoType {
-    Square,
-    Triangle,
-    Saw,
-    Sine,
+pub enum Lfo {
+    Square(f64, f64, f64, f64, bool),
+    Triangle(f64, f64, f64, f64, bool),
+    Saw(f64, f64, f64, f64, bool),
+    Sine(f64, f64, f64, f64, bool),
+}
+
+impl Lfo {
+    pub fn get_amplitude(&self, beat: f64) -> f64 {
+        match *self {
+            Self::Square(numerator, denominator, phase, amplitude, signed) => {
+                let beat_cursor = (beat * numerator / denominator + phase).fract();
+                let value = if beat_cursor >= 0.5 { 1.0 } else { 0.0 };
+
+                amplitude * if signed { value * 2.0 - 1.0 } else { value }
+            }
+            Self::Triangle(numerator, denominator, phase, amplitude, signed) => {
+                let beat_cursor = (beat * numerator / denominator + phase).fract();
+                let value = 1.0 - (beat_cursor * 2.0 - 1.0).abs();
+
+                amplitude * if signed { value * 2.0 - 1.0 } else { value }
+            }
+            Self::Saw(numerator, denominator, phase, amplitude, signed) => {
+                let beat_cursor = (beat * numerator / denominator + phase).fract();
+                let value = beat_cursor;
+
+                amplitude * if signed { value * 2.0 - 1.0 } else { value }
+            }
+            Self::Sine(numerator, denominator, phase, amplitude, signed) => {
+                let beat_cursor = (beat * numerator / denominator + phase).fract();
+                let value = (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5;
+
+                amplitude * if signed { value * 2.0 - 1.0 } else { value }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Automation {
-    Lfo(LfoType, f64, f64, f64, f64, bool),
+    Lfo(Lfo),
+    Lfo2d(Lfo, Lfo),
+    Lfo3d(Lfo, Lfo, Lfo),
+    Lfo4d(Lfo, Lfo, Lfo, Lfo),
     None,
 }
 
@@ -42,63 +76,120 @@ impl Automation {
             return None;
         }
         let offset = match *self {
-            Self::Lfo(lfo_type, numerator, denominator, phase, amplitude, signed) => {
-                let beat_cursor = (beat * numerator / denominator + phase).fract();
-
-                let offset = match lfo_type {
-                    LfoType::Square => {
-                        if beat_cursor >= 0.5 {
-                            1.0
-                        } else {
-                            0.0
-                        }
-                    }
-                    LfoType::Triangle => 1.0 - (beat_cursor * 2.0 - 1.0).abs(),
-                    LfoType::Saw => beat_cursor,
-                    LfoType::Sine => (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5,
-                };
-
-                amplitude * if signed { offset * 2.0 - 1.0 } else { offset }
-            }
+            Self::Lfo(lfo) => vec![lfo.get_amplitude(beat)],
+            Self::Lfo2d(lfo_x, lfo_y) => vec![lfo_x.get_amplitude(beat), lfo_y.get_amplitude(beat)],
+            Self::Lfo3d(lfo_x, lfo_y, lfo_z) => vec![
+                lfo_x.get_amplitude(beat),
+                lfo_y.get_amplitude(beat),
+                lfo_z.get_amplitude(beat),
+            ],
+            Self::Lfo4d(lfo_x, lfo_y, lfo_z, lfo_w) => vec![
+                lfo_x.get_amplitude(beat),
+                lfo_y.get_amplitude(beat),
+                lfo_z.get_amplitude(beat),
+                lfo_w.get_amplitude(beat),
+            ],
             _ => unreachable!(),
         };
 
         match *value {
             DataHolder::Bool(bool_value) => Some(DataHolder::Bool(
-                (bool_value || offset > 0.5) && offset > 0.0,
+                (bool_value || offset[0] > 0.5) && offset[0] > 0.0,
             )),
-            DataHolder::Float(float_value) => Some(DataHolder::Float(float_value + offset as f32)),
-            DataHolder::Float2(float2_value) => Some(DataHolder::Float2([
-                float2_value[0] + offset as f32,
-                float2_value[1] + offset as f32,
-            ])),
-            DataHolder::Float3(float3_value) => Some(DataHolder::Float3([
-                float3_value[0] + offset as f32,
-                float3_value[1] + offset as f32,
-                float3_value[2] + offset as f32,
-            ])),
-            DataHolder::Float4(float4_value) => Some(DataHolder::Float4([
-                float4_value[0] + offset as f32,
-                float4_value[1] + offset as f32,
-                float4_value[2] + offset as f32,
-                float4_value[3] + offset as f32,
-            ])),
-            DataHolder::Int(int_value) => Some(DataHolder::Int(int_value + offset as i32)),
-            DataHolder::Int2(int2_value) => Some(DataHolder::Int2([
-                int2_value[0] + offset as i32,
-                int2_value[1] + offset as i32,
-            ])),
-            DataHolder::Int3(int3_value) => Some(DataHolder::Int3([
-                int3_value[0] + offset as i32,
-                int3_value[1] + offset as i32,
-                int3_value[2] + offset as i32,
-            ])),
-            DataHolder::Int4(int4_value) => Some(DataHolder::Int4([
-                int4_value[0] + offset as i32,
-                int4_value[1] + offset as i32,
-                int4_value[2] + offset as i32,
-                int4_value[3] + offset as i32,
-            ])),
+            DataHolder::Float(float_value) => {
+                Some(DataHolder::Float(float_value + offset[0] as f32))
+            }
+            DataHolder::Float2(float2_value) => {
+                if offset.len() == 2 {
+                    Some(DataHolder::Float2([
+                        float2_value[0] + offset[0] as f32,
+                        float2_value[1] + offset[1] as f32,
+                    ]))
+                } else {
+                    Some(DataHolder::Float2([
+                        float2_value[0] + offset[0] as f32,
+                        float2_value[1] + offset[0] as f32,
+                    ]))
+                }
+            }
+            DataHolder::Float3(float3_value) => {
+                if offset.len() == 3 {
+                    Some(DataHolder::Float3([
+                        float3_value[0] + offset[0] as f32,
+                        float3_value[1] + offset[1] as f32,
+                        float3_value[2] + offset[2] as f32,
+                    ]))
+                } else {
+                    Some(DataHolder::Float3([
+                        float3_value[0] + offset[0] as f32,
+                        float3_value[1] + offset[0] as f32,
+                        float3_value[2] + offset[0] as f32,
+                    ]))
+                }
+            }
+            DataHolder::Float4(float4_value) => {
+                if offset.len() == 4 {
+                    Some(DataHolder::Float4([
+                        float4_value[0] + offset[0] as f32,
+                        float4_value[1] + offset[1] as f32,
+                        float4_value[2] + offset[2] as f32,
+                        float4_value[3] + offset[3] as f32,
+                    ]))
+                } else {
+                    Some(DataHolder::Float4([
+                        float4_value[0] + offset[0] as f32,
+                        float4_value[1] + offset[0] as f32,
+                        float4_value[2] + offset[0] as f32,
+                        float4_value[3] + offset[0] as f32,
+                    ]))
+                }
+            }
+            DataHolder::Int(int_value) => Some(DataHolder::Int(int_value + offset[0] as i32)),
+            DataHolder::Int2(int2_value) => {
+                if offset.len() == 2 {
+                    Some(DataHolder::Int2([
+                        int2_value[0] + offset[0] as i32,
+                        int2_value[1] + offset[1] as i32,
+                    ]))
+                } else {
+                    Some(DataHolder::Int2([
+                        int2_value[0] + offset[0] as i32,
+                        int2_value[1] + offset[0] as i32,
+                    ]))
+                }
+            }
+            DataHolder::Int3(int3_value) => {
+                if offset.len() == 3 {
+                    Some(DataHolder::Int3([
+                        int3_value[0] + offset[0] as i32,
+                        int3_value[1] + offset[1] as i32,
+                        int3_value[2] + offset[2] as i32,
+                    ]))
+                } else {
+                    Some(DataHolder::Int3([
+                        int3_value[0] + offset[0] as i32,
+                        int3_value[1] + offset[0] as i32,
+                        int3_value[2] + offset[0] as i32,
+                    ]))
+                }
+            }
+            DataHolder::Int4(int4_value) => {
+                if offset.len() == 4 {
+                    Some(DataHolder::Int4([
+                        int4_value[0] + offset[0] as i32,
+                        int4_value[1] + offset[0] as i32,
+                        int4_value[2] + offset[0] as i32,
+                        int4_value[3] + offset[0] as i32,
+                    ]))
+                } else {
+                    Some(DataHolder::Int4([
+                        int4_value[0] + offset[0] as i32,
+                        int4_value[1] + offset[1] as i32,
+                        int4_value[2] + offset[2] as i32,
+                        int4_value[3] + offset[3] as i32,
+                    ]))
+                }
+            }
             _ => None,
         }
     }
