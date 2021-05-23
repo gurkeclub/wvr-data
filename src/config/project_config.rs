@@ -20,40 +20,43 @@ pub struct ViewConfig {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
-pub enum Lfo {
-    Square(f64, f64, f64, f64, bool),
-    Triangle(f64, f64, f64, f64, bool),
-    Saw(f64, f64, f64, f64, bool),
-    Sine(f64, f64, f64, f64, bool),
+pub enum LfoType {
+    Square,
+    Triangle,
+    Saw,
+    Sine,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Lfo {
+    pub lfo_type: LfoType,
+    pub numerator: f64,
+    pub denominator: f64,
+    pub phase: f64,
+    pub amplitude: f64,
+    pub signed: bool,
 }
 
 impl Lfo {
     pub fn get_amplitude(&self, beat: f64) -> f64 {
-        match *self {
-            Self::Square(numerator, denominator, phase, amplitude, signed) => {
-                let beat_cursor = (beat * numerator / denominator + phase).fract();
-                let value = if beat_cursor >= 0.5 { 1.0 } else { 0.0 };
-
-                amplitude * if signed { value * 2.0 - 1.0 } else { value }
+        let beat_cursor = (beat * self.numerator / self.denominator + self.phase).fract();
+        let value = match self.lfo_type {
+            LfoType::Square => {
+                if beat_cursor >= 0.5 {
+                    1.0
+                } else {
+                    0.0
+                }
             }
-            Self::Triangle(numerator, denominator, phase, amplitude, signed) => {
-                let beat_cursor = (beat * numerator / denominator + phase).fract();
-                let value = 1.0 - (beat_cursor * 2.0 - 1.0).abs();
+            LfoType::Triangle => 1.0 - (beat_cursor * 2.0 - 1.0).abs(),
+            LfoType::Saw => beat_cursor,
+            LfoType::Sine => (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5,
+        };
 
-                amplitude * if signed { value * 2.0 - 1.0 } else { value }
-            }
-            Self::Saw(numerator, denominator, phase, amplitude, signed) => {
-                let beat_cursor = (beat * numerator / denominator + phase).fract();
-                let value = beat_cursor;
-
-                amplitude * if signed { value * 2.0 - 1.0 } else { value }
-            }
-            Self::Sine(numerator, denominator, phase, amplitude, signed) => {
-                let beat_cursor = (beat * numerator / denominator + phase).fract();
-                let value = (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5;
-
-                amplitude * if signed { value * 2.0 - 1.0 } else { value }
-            }
+        if self.signed {
+            value * 2.0 - 1.0
+        } else {
+            value
         }
     }
 }
