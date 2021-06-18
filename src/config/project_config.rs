@@ -53,11 +53,13 @@ impl Lfo {
             LfoType::Sine => (beat_cursor * 2.0 * std::f64::consts::PI).sin() * 0.5 + 0.5,
         };
 
-        if self.signed {
+        let value = if self.signed {
             value * 2.0 - 1.0
         } else {
             value
-        }
+        };
+
+        value * self.amplitude
     }
 }
 
