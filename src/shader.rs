@@ -1,10 +1,15 @@
 use std::io::Error;
 use std::io::Read;
 use std::path::PathBuf;
-use std::time::SystemTime;
+use std::sync::mpsc::Receiver;
+use std::time::Duration;
 use std::{fs::File, io::ErrorKind};
 
 use anyhow::{Context, Result};
+
+use notify::DebouncedEvent;
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use std::sync::mpsc::channel;
 
 pub trait Shader {
     fn get_text(&self) -> &str;
@@ -48,8 +53,9 @@ impl Shader for TextShader {
 pub struct FileShader {
     text_shader: TextShader,
     file_path: PathBuf,
-    timestamp: SystemTime,
     live_reload: bool,
+    _file_watcher: RecommendedWatcher,
+    file_change_rx: Receiver<DebouncedEvent>,
 }
 
 impl FileShader {
@@ -60,11 +66,13 @@ impl FileShader {
                 format!("Failed to open shader file: {:?} ({:?})", &file_path, &e),
             )
         })?;
-        let timestamp = file
-            .metadata()
-            .context("Failed to retrieve shader file metadata")?
-            .modified()
-            .context("Failed to retrieve shader file last modification time")?;
+
+        let (tx, file_change_rx) = channel();
+        let mut file_watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_millis(1))?;
+
+        // Add a path to be watched. All files and directories at that path and
+        // below will be monitored for changes.
+        file_watcher.watch(&file_path, RecursiveMode::NonRecursive)?;
 
         let mut text = String::new();
         file.read_to_string(&mut text).map_err(|e| {
@@ -82,8 +90,9 @@ impl FileShader {
         Ok(Self {
             text_shader,
             file_path,
-            timestamp,
             live_reload,
+            _file_watcher: file_watcher,
+            file_change_rx,
         })
     }
 }
@@ -102,21 +111,16 @@ impl Shader for FileShader {
             return Ok(false);
         }
 
-        if let Ok(metadata) = std::fs::metadata(&self.file_path) {
-            let current_timestamp = metadata
-                .modified()
-                .context("Failed to retrieve shader file last modification time")?;
-            if current_timestamp != self.timestamp {
-                let mut file = File::open(&self.file_path).context("Failed to open shader file")?;
-                let mut text = String::new();
-                file.read_to_string(&mut text)
-                    .context("Failed to retrieve shader content")?;
+        if let Ok(DebouncedEvent::Write(_)) = self.file_change_rx.try_recv() {
+            let mut file = File::open(&self.file_path).context("Failed to open shader file")?;
+            let mut text = String::new();
+            file.read_to_string(&mut text)
+                .context("Failed to retrieve shader content")?;
 
-                self.text_shader.set_text(text);
-                self.timestamp = current_timestamp;
-                return Ok(true);
-            }
+            self.text_shader.set_text(text);
+            return Ok(true);
         }
+
         Ok(false)
     }
 
